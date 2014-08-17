@@ -22,14 +22,14 @@ func AESOracle(plaintext []byte) (encrypted []byte, err error, ecb bool) {
 
 	key := RandomSlice(16)
 	iv := RandomSlice(16)
-	aesBlock, err := aes.NewCipher([]byte(key))
+	cipher, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		return nil, err, false
 	}
 	mode := rand.Intn(2)
-	encrypter := NewECBEncrypter(aesBlock)
+	encrypter := NewECBEncrypter(cipher)
 	if mode == 1 {
-		encrypter = NewCBCEncrypter(aesBlock, iv)
+		encrypter = NewCBCEncrypter(cipher, iv)
 	}
 
 	encrypter.CryptBlocks(result, result)

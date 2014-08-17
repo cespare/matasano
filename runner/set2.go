@@ -71,7 +71,6 @@ func Problem10() (string, error) {
 // of the interior blocks of the encrypted result are the same.
 func Problem11() (string, error) {
 	const trials = 100
-
 	success := 0
 	input := make([]byte, 160)
 	for i := 0; i < trials; i++ {
@@ -79,9 +78,7 @@ func Problem11() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		// Check if blocks 3, 4, 5, and 6 are the same (which they should be for ECB).
-		detectedEcb := matasano.IsECB(encrypted, 16)
-		if detectedEcb == ecb {
+		if matasano.IsECB(encrypted, 16) == ecb {
 			success++
 		}
 	}
