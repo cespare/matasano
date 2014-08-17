@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/cespare/matasano"
+	"github.com/cespare/matasano/p13"
 	"github.com/cespare/matasano/pkcs7"
 )
 
@@ -161,4 +162,47 @@ YnkK
 	}
 
 	return fmt.Sprintf("Message: %q\n", unknown), nil
+}
+
+func Problem13() (string, error) {
+	// Could detect the block size and ECB as in #12, but going to skip that this time.
+	const blockSize = 16
+
+	// Strategy: our final string will have N blocks such that the last two blocks look like:
+	// N-2: [...........role=]
+	// N-1: [admin....pad....]
+	// We can do this with three blocks by using an email address that's 13 bytes long:
+	// 1: email=abc@defgh.
+	// 2: com&uid=10&role=
+	// 3: admin...........   (all the . are 0xb)
+	// So we need to separately determine what each of the encrypted values of those blocks are. The first 2 are
+	// the same as if we just call EncryptedProfileFor(abc@defgh.com); we'll use a specially constructed email
+	// address to determine the value of the last block:
+	// 1: email=aaaaaaaaaa
+	// 2: admin...........    . = 0xb
+	// 3: @whatever.com
+
+	target := make([]byte, blockSize*3)
+	first, err := p13.EncryptedProfileFor("abc@defgh.com")
+	if err != nil {
+		return "", err
+	}
+	copy(target, first[:blockSize*2])
+
+	second, err := p13.EncryptedProfileFor("aaaaaaaaaaadmin\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b\x0b")
+	if err != nil {
+		return "", err
+	}
+	copy(target[2*blockSize:], second[blockSize:2*blockSize])
+
+	result, err := p13.DecryptProfile(target)
+	if err != nil {
+		return "", err
+	}
+	role := result.Get("role")
+	msg := fmt.Sprintf("role: %q", role)
+	if role == "admin" {
+		return msg, nil
+	}
+	return "", fmt.Errorf(msg)
 }

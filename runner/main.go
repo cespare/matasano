@@ -23,6 +23,7 @@ func main() {
 		{10, Problem10},
 		{11, Problem11},
 		{12, Problem12},
+		{13, Problem13},
 	} {
 		fmt.Printf("%-2d ", p.id)
 		color := "\033[92m"
