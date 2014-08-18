@@ -116,3 +116,59 @@ func (o *AESOracle2) ECBNextUnknownByte(soFar []byte, blockSize int) (byte, erro
 
 	return 0, errors.New("could not determine next unknown byte")
 }
+
+type Oracle interface {
+	Encrypt([]byte) ([]byte, error)
+}
+
+func DetermineBlockSize(oracle Oracle) (int, error) {
+	encSize := -1
+	blockSize := 0
+	for i := 0; ; i++ {
+		b := make([]byte, i)
+		encrypted, err := oracle.Encrypt(b)
+		if err != nil {
+			return 0, err
+		}
+		nextSize := len(encrypted)
+		if encSize == -1 {
+			encSize = nextSize
+			continue
+		}
+		if nextSize != encSize {
+			blockSize = nextSize - encSize
+			break
+		}
+	}
+	return blockSize, nil
+}
+
+// AESOracle3 is an instance of the oracle described at http://cryptopals.com/sets/2/challenges/14/.
+type AESOracle3 struct {
+	ciphertext []byte
+	key        []byte
+	prefix     []byte
+}
+
+func NewAESOracle3(ciphertext []byte) *AESOracle3 {
+	return &AESOracle3{
+		ciphertext: ciphertext,
+		key:        RandomSlice(16),
+		// 10 - 30 random bytes
+		prefix: RandomSlice(rand.Intn(21) + 10),
+	}
+}
+
+func (o *AESOracle3) Encrypt(plaintext []byte) ([]byte, error) {
+	cipher, err := aes.NewCipher(o.key)
+	if err != nil {
+		return nil, err
+	}
+	encrypter := NewECBEncrypter(cipher)
+	input := append([]byte{}, o.prefix...)
+	input = append(input, plaintext...)
+	input = append(input, o.ciphertext...)
+	result := pkcs7.Pad(input, 16)
+	encrypter.CryptBlocks(result, result)
+	return result, nil
+}
